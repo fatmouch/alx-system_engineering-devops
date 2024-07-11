@@ -1,28 +1,18 @@
- Bash script that will display information about the subdomains
+#!/usr/bin/env bash
+# Script that will display information about subdomains
 
-# Check if at least one argument is provided
-if [ $# -lt 1 ]; then
-  echo "Usage: $0 domain [subdomain1 subdomain2 ...]"
-  exit 1
+DNS_info () {
+    ANSWER=$(dig $2 | grep -A1 'ANSWER SECTION:' | awk 'NR==2 {print $0}')
+    echo "The subdomain $1 is a $(echo $ANSWER | awk '{print $4}') record and points to $(echo $ANSWER | awk '{print $5}')"
+}
+
+if [[ $# == 1 ]]; then
+    subdomains=('www' 'lb-01' 'web-01' 'web-02')
+    for i in "${subdomains[@]}"; do
+	CONCAT="$i.$1"
+	DNS_info $i $CONCAT
+    done
+else
+    CONCAT="$2.$1"
+    DNS_info $2 $CONCAT
 fi
-
-# Set domain name
-domain="$1"
-
-# Set subdomains to query
-subdomains=("www" "lb-01" "web-01" "web-02")
-
-# If additional subdomains are provided as arguments, add them to the subdomains array
-if [ $# -gt 1 ]; then
-  subdomains+=("${@:2}")
-fi
-
-# Loop through subdomains and display information
-for subdomain in "${subdomains[@]}"; do
-  output=$(dig "$subdomain.$domain" +short)
-  if [ -n "$output" ]; then
-    echo "The subdomain $subdomain has IP address $output"
-  else
-    echo "The subdomain $subdomain does not exist"
-  fi
-done
